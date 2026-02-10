@@ -66,6 +66,72 @@
             margin-bottom: 15px;
         }
         
+        /* Paragraph alignment display */
+        .para-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .para-grid-header {
+            font-weight: 700;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 10px 14px;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+        .para-grid-header.eng { background: #d6eaf8; color: #2471a3; border-right: 1px solid #ddd; }
+        .para-grid-header.trans { background: #d5f5e3; color: #1e8449; }
+        
+        .para-row-eng, .para-row-trans {
+            padding: 10px 14px;
+            font-size: 13px;
+            line-height: 1.5;
+            border-top: 1px solid #eee;
+        }
+        .para-row-eng { border-right: 1px solid #ddd; background: #fafcfe; }
+        .para-row-trans { background: #fafef9; }
+        
+        .para-num {
+            display: inline-block;
+            background: #2c3e50;
+            color: white;
+            font-size: 11px;
+            font-weight: 700;
+            width: 22px;
+            height: 22px;
+            line-height: 22px;
+            text-align: center;
+            border-radius: 50%;
+            margin-right: 8px;
+            flex-shrink: 0;
+            vertical-align: top;
+        }
+        .para-row-eng .para-num { background: #3498db; }
+        .para-row-trans .para-num { background: #27ae60; }
+        
+        .para-text {
+            display: inline;
+        }
+        
+        .para-row-eng.active, .para-row-trans.active {
+            background: #fff9e6;
+            outline: 2px solid #f1c40f;
+            outline-offset: -2px;
+        }
+        .para-row-eng.copied, .para-row-trans.copied {
+            background: #eafaf1;
+        }
+        
+        /* Copy section */
         .copy-box {
             background: #fff3cd;
             border: 2px solid #ffc107;
@@ -75,23 +141,45 @@
         }
         .copy-box h3 { margin-top: 0; color: #856404; }
         
-        #previewBox {
-            background: white;
-            border: 1px solid #ddd;
-            padding: 15px;
-            border-radius: 6px;
+        .preview-pair {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
             margin: 15px 0;
-            max-height: 120px;
+        }
+        
+        .preview-card {
+            border-radius: 6px;
+            padding: 12px 15px;
+            min-height: 80px;
+            max-height: 140px;
             overflow-y: auto;
-        }
-        #previewLabel {
-            font-size: 12px;
-            color: #666;
-            margin-bottom: 5px;
-        }
-        #previewText {
             font-size: 14px;
             line-height: 1.5;
+        }
+        .preview-card-label {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+        
+        .preview-copied {
+            background: #eafaf1;
+            border: 2px solid #27ae60;
+        }
+        .preview-copied .preview-card-label { color: #1e8449; }
+        
+        .preview-next {
+            background: #eaf2f8;
+            border: 2px solid #3498db;
+        }
+        .preview-next .preview-card-label { color: #2471a3; }
+        
+        .preview-empty {
+            color: #999;
+            font-style: italic;
         }
         
         #feedback {
@@ -103,12 +191,6 @@
             transition: opacity 0.3s;
         }
         #feedback.show { opacity: 1; }
-        
-        .counter {
-            font-size: 24px;
-            font-weight: bold;
-            color: #2c3e50;
-        }
         
         #doneMessage {
             display: none;
@@ -136,6 +218,20 @@
             font-size: 14px;
         }
         #charCount { font-size: 13px; color: #666; margin-top: 5px; }
+        
+        .spacebar-hint {
+            font-size: 12px;
+            color: #888;
+            margin-top: 8px;
+        }
+        .spacebar-hint kbd {
+            background: #eee;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            padding: 1px 6px;
+            font-size: 11px;
+            font-family: inherit;
+        }
     </style>
 </head>
 <body>
@@ -148,7 +244,7 @@
                 <div id="englishInput" class="input-area" contenteditable="true"></div>
             </div>
             <div class="input-box translation">
-                <h3>🌍 Translation</h3>
+                <h3>🌐 Translation</h3>
                 <div id="translationInput" class="input-area" contenteditable="true"></div>
             </div>
         </div>
@@ -164,26 +260,37 @@
         
         <div id="statsBox" class="stats"></div>
         
+        <!-- Numbered paragraph grid -->
+        <div id="paraGrid" class="para-grid"></div>
+        
         <div class="copy-box">
             <h3>⚡ Sequential Copy Mode</h3>
-            <p>Click the button to copy each translation paragraph. Then paste (Ctrl+V) into WPML.</p>
+            <p>Click the button to copy each translation paragraph <strong>with formatting</strong>. Then paste (Ctrl+V) into WPML.</p>
             
             <div style="margin: 15px 0;">
                 <button class="btn btn-secondary" id="resetBtn">⟲ Reset</button>
-                <button class="btn btn-warning" id="skipBtn">⏭ Skip</button>
+                <button class="btn btn-warning" id="skipBtn">⭢ Skip</button>
                 <button class="btn btn-success" id="copyNextBtn" style="font-size: 18px; padding: 15px 30px;">
                     📋 Copy & Next (<span id="currentNum">1</span> of <span id="totalNum">0</span>)
                 </button>
-                <span id="feedback">✓ Copied!</span>
+                <span id="feedback">✔ Copied!</span>
             </div>
             
-            <div id="previewLabel">NEXT TO COPY:</div>
-            <div id="previewBox">
-                <div id="previewText"></div>
+            <div class="spacebar-hint">💡 Tip: Press <kbd>Space</kbd> to copy &amp; advance (when not typing in a text box)</div>
+            
+            <div class="preview-pair">
+                <div class="preview-card preview-copied">
+                    <div class="preview-card-label">✔ Just Copied (¶<span id="copiedNum">—</span>)</div>
+                    <div id="copiedText" class="preview-empty">Nothing copied yet</div>
+                </div>
+                <div class="preview-card preview-next">
+                    <div class="preview-card-label">📋 Next to Copy (¶<span id="nextNum">1</span>)</div>
+                    <div id="previewText"></div>
+                </div>
             </div>
             
             <div id="doneMessage">
-                <strong>✓ All translations copied!</strong> Don't forget to copy the Excerpt below.
+                <strong>✔ All translations copied!</strong> Don't forget to copy the Excerpt below.
             </div>
         </div>
         
@@ -198,7 +305,9 @@
     <script>
         // State
         var currentIndex = 0;
-        var translations = [];
+        var translationsPlain = [];  // plain text versions
+        var translationsHtml = [];   // HTML versions (with bold/italic)
+        var englishPlain = [];
         
         // DOM elements
         var englishInput = document.getElementById('englishInput');
@@ -208,11 +317,15 @@
         var currentNum = document.getElementById('currentNum');
         var totalNum = document.getElementById('totalNum');
         var previewText = document.getElementById('previewText');
+        var copiedText = document.getElementById('copiedText');
+        var copiedNum = document.getElementById('copiedNum');
+        var nextNum = document.getElementById('nextNum');
         var feedback = document.getElementById('feedback');
         var doneMessage = document.getElementById('doneMessage');
         var excerptText = document.getElementById('excerptText');
         var charCount = document.getElementById('charCount');
         var copyNextBtn = document.getElementById('copyNextBtn');
+        var paraGrid = document.getElementById('paraGrid');
         
         // Button handlers
         document.getElementById('alignBtn').onclick = alignParagraphs;
@@ -230,7 +343,7 @@
                 if (e.target.contentEditable === 'true') return;
                 
                 if (resultsSection.className.indexOf('show') > -1) {
-                    if (currentIndex < translations.length) {
+                    if (currentIndex < translationsPlain.length) {
                         e.preventDefault();
                         copyNext();
                     }
@@ -238,25 +351,42 @@
             }
         };
         
-        function cleanHtml(html) {
+        // Clean HTML but PRESERVE bold/italic tags
+        function cleanHtmlPreserveFormatting(html) {
             var text = html;
             // Remove MS Office tags
             text = text.replace(/<o:p>[\s\S]*?<\/o:p>/gi, '');
             text = text.replace(/<\/?(o|w|m|v):[^>]*>/gi, '');
             text = text.replace(/<!--[\s\S]*?-->/gi, '');
-            // Remove spans/fonts
+            // Remove spans but keep content
             text = text.replace(/<span[^>]*>([\s\S]*?)<\/span>/gi, '$1');
             text = text.replace(/<font[^>]*>([\s\S]*?)<\/font>/gi, '$1');
-            // Remove attributes
-            text = text.replace(/\s+(style|class|lang|align)="[^"]*"/gi, '');
+            // Remove most attributes BUT keep bold/italic tags intact
+            // First, protect b/strong/i/em tags
+            text = text.replace(/<(\/?)b(\s[^>]*)?>/gi, '[[B_$1]]');
+            text = text.replace(/<(\/?)strong(\s[^>]*)?>/gi, '[[STRONG_$1]]');
+            text = text.replace(/<(\/?)i(\s[^>]*)?>/gi, '[[I_$1]]');
+            text = text.replace(/<(\/?)em(\s[^>]*)?>/gi, '[[EM_$1]]');
+            text = text.replace(/<(\/?)u(\s[^>]*)?>/gi, '[[U_$1]]');
             // Convert blocks to newlines
             text = text.replace(/<\/p>/gi, '\n\n');
             text = text.replace(/<p[^>]*>/gi, '');
             text = text.replace(/<br\s*\/?>/gi, '\n');
             text = text.replace(/<\/div>/gi, '\n');
             text = text.replace(/<div[^>]*>/gi, '');
-            // Remove remaining tags
+            // Remove remaining tags (but not our placeholders)
             text = text.replace(/<[^>]+>/gi, '');
+            // Restore protected tags (clean, no attributes)
+            text = text.replace(/\[\[B_\]\]/gi, '<b>');
+            text = text.replace(/\[\[B_\/\]\]/gi, '</b>');
+            text = text.replace(/\[\[STRONG_\]\]/gi, '<strong>');
+            text = text.replace(/\[\[STRONG_\/\]\]/gi, '</strong>');
+            text = text.replace(/\[\[I_\]\]/gi, '<i>');
+            text = text.replace(/\[\[I_\/\]\]/gi, '</i>');
+            text = text.replace(/\[\[EM_\]\]/gi, '<em>');
+            text = text.replace(/\[\[EM_\/\]\]/gi, '</em>');
+            text = text.replace(/\[\[U_\]\]/gi, '<u>');
+            text = text.replace(/\[\[U_\/\]\]/gi, '</u>');
             // Clean entities
             text = text.replace(/&nbsp;/gi, ' ');
             text = text.replace(/&amp;/gi, '&');
@@ -268,75 +398,159 @@
             return text.trim();
         }
         
-        function getParagraphs(element) {
+        function stripAllTags(html) {
+            return html.replace(/<[^>]+>/gi, '');
+        }
+        
+        function getParagraphsBoth(element) {
             var html = element.innerHTML;
-            var cleaned = cleanHtml(html);
+            var cleaned = cleanHtmlPreserveFormatting(html);
             var paras = cleaned.split(/\n\n+/);
-            var result = [];
+            var resultHtml = [];
+            var resultPlain = [];
             for (var i = 0; i < paras.length; i++) {
                 var p = paras[i].replace(/\n/g, ' ').trim();
-                if (p.length > 0) {
-                    result.push(p);
+                if (p.length > 0 && stripAllTags(p).trim().length > 0) {
+                    resultHtml.push(p);
+                    resultPlain.push(stripAllTags(p));
                 }
             }
-            return result;
+            return { html: resultHtml, plain: resultPlain };
         }
         
         function alignParagraphs() {
-            var engParas = getParagraphs(englishInput);
-            var transParas = getParagraphs(translationInput);
+            var engData = getParagraphsBoth(englishInput);
+            var transData = getParagraphsBoth(translationInput);
             
-            if (engParas.length < 2 || transParas.length < 2) {
+            if (engData.plain.length < 2 || transData.plain.length < 2) {
                 alert('Please paste content from both Word documents first.');
                 return;
             }
             
-            translations = transParas;
+            translationsPlain = transData.plain;
+            translationsHtml = transData.html;
+            englishPlain = engData.plain;
             currentIndex = 0;
             
             // Show results
             resultsSection.className = 'section show';
             
             // Stats
-            var match = engParas.length === transParas.length;
-            statsBox.innerHTML = '<strong>English:</strong> ' + engParas.length + ' paragraphs | ' +
-                '<strong>Translation:</strong> ' + transParas.length + ' paragraphs | ' +
-                '<strong>Status:</strong> ' + (match ? '✓ Perfect match!' : '⚠ Mismatch');
+            var match = engData.plain.length === transData.plain.length;
+            statsBox.innerHTML = '<strong>English:</strong> ' + engData.plain.length + ' paragraphs | ' +
+                '<strong>Translation:</strong> ' + transData.plain.length + ' paragraphs | ' +
+                '<strong>Status:</strong> ' + (match ? '✔ Perfect match!' : '⚠ Mismatch — review numbering below');
             
-            // Update UI
+            // Build numbered paragraph grid
+            buildParaGrid(engData.plain, transData.plain);
+            
+            // Update copy UI
             updateUI();
             
             // Generate excerpt
-            generateExcerpt(transParas);
+            generateExcerpt(transData.plain);
+            
+            // Scroll to results
+            resultsSection.scrollIntoView({ behavior: 'smooth' });
         }
         
-        function updateUI() {
-            totalNum.textContent = translations.length;
+        function buildParaGrid(engParas, transParas) {
+            var maxLen = Math.max(engParas.length, transParas.length);
+            var html = '';
+            html += '<div class="para-grid-header eng">🇬🇧 English</div>';
+            html += '<div class="para-grid-header trans">🌐 Translation</div>';
             
-            if (currentIndex >= translations.length) {
-                currentNum.textContent = translations.length;
-                copyNextBtn.innerHTML = '✓ All Done!';
-                copyNextBtn.disabled = true;
-                copyNextBtn.style.background = '#95a5a6';
-                previewText.textContent = '';
-                doneMessage.className = 'show';
-            } else {
-                currentNum.textContent = currentIndex + 1;
-                copyNextBtn.innerHTML = '📋 Copy & Next (' + (currentIndex + 1) + ' of ' + translations.length + ')';
-                copyNextBtn.disabled = false;
-                copyNextBtn.style.background = '#27ae60';
-                previewText.textContent = translations[currentIndex];
-                doneMessage.className = '';
+            for (var i = 0; i < maxLen; i++) {
+                var engText = i < engParas.length ? engParas[i] : '<span style="color:#ccc">—</span>';
+                var transText = i < transParas.length ? transParas[i] : '<span style="color:#ccc">—</span>';
+                
+                // Truncate for display (show first ~120 chars)
+                var engDisplay = i < engParas.length && engParas[i].length > 120 
+                    ? engParas[i].substring(0, 120) + '…' : engText;
+                var transDisplay = i < transParas.length && transParas[i].length > 120 
+                    ? transParas[i].substring(0, 120) + '…' : transText;
+                
+                html += '<div class="para-row-eng" id="eng-' + i + '"><span class="para-num">' + (i + 1) + '</span><span class="para-text">' + engDisplay + '</span></div>';
+                html += '<div class="para-row-trans" id="trans-' + i + '"><span class="para-num">' + (i + 1) + '</span><span class="para-text">' + transDisplay + '</span></div>';
+            }
+            
+            paraGrid.innerHTML = html;
+        }
+        
+        function highlightCurrentRow() {
+            // Remove all highlights
+            var rows = paraGrid.querySelectorAll('.para-row-eng, .para-row-trans');
+            for (var i = 0; i < rows.length; i++) {
+                rows[i].classList.remove('active');
+                rows[i].classList.remove('copied');
+            }
+            
+            // Mark copied rows
+            for (var j = 0; j < currentIndex; j++) {
+                var ce = document.getElementById('eng-' + j);
+                var ct = document.getElementById('trans-' + j);
+                if (ce) ce.classList.add('copied');
+                if (ct) ct.classList.add('copied');
+            }
+            
+            // Highlight current
+            if (currentIndex < translationsPlain.length) {
+                var ae = document.getElementById('eng-' + currentIndex);
+                var at = document.getElementById('trans-' + currentIndex);
+                if (ae) ae.classList.add('active');
+                if (at) {
+                    at.classList.add('active');
+                    at.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
             }
         }
         
+        function updateUI() {
+            totalNum.textContent = translationsPlain.length;
+            
+            if (currentIndex >= translationsPlain.length) {
+                currentNum.textContent = translationsPlain.length;
+                copyNextBtn.innerHTML = '✔ All Done!';
+                copyNextBtn.disabled = true;
+                copyNextBtn.style.background = '#95a5a6';
+                previewText.textContent = '';
+                previewText.className = 'preview-empty';
+                previewText.textContent = 'All paragraphs copied!';
+                nextNum.textContent = '—';
+                doneMessage.className = 'show';
+            } else {
+                currentNum.textContent = currentIndex + 1;
+                copyNextBtn.innerHTML = '📋 Copy & Next (¶' + (currentIndex + 1) + ' of ' + translationsPlain.length + ')';
+                copyNextBtn.disabled = false;
+                copyNextBtn.style.background = '#27ae60';
+                previewText.innerHTML = translationsHtml[currentIndex];
+                previewText.className = '';
+                nextNum.textContent = currentIndex + 1;
+                doneMessage.className = '';
+            }
+            
+            // Update "just copied" area
+            if (currentIndex > 0) {
+                copiedText.innerHTML = translationsHtml[currentIndex - 1];
+                copiedText.className = '';
+                copiedNum.textContent = currentIndex;
+            } else {
+                copiedText.className = 'preview-empty';
+                copiedText.textContent = 'Nothing copied yet';
+                copiedNum.textContent = '—';
+            }
+            
+            highlightCurrentRow();
+        }
+        
         function copyNext() {
-            if (currentIndex >= translations.length) return;
+            if (currentIndex >= translationsPlain.length) return;
             
-            var text = translations[currentIndex];
+            var plainText = translationsPlain[currentIndex];
+            var htmlText = translationsHtml[currentIndex];
             
-            // Copy to clipboard
-            copyToClipboard(text);
+            // Copy with formatting using Clipboard API
+            copyRichText(plainText, htmlText);
             
             // Show feedback
             feedback.className = 'show';
@@ -347,41 +561,84 @@
             updateUI();
         }
         
+        function copyRichText(plain, html) {
+            // Wrap HTML in a paragraph for proper pasting
+            var wrappedHtml = '<p>' + html + '</p>';
+            
+            // Try modern Clipboard API with HTML support
+            if (navigator.clipboard && typeof ClipboardItem !== 'undefined') {
+                try {
+                    var htmlBlob = new Blob([wrappedHtml], { type: 'text/html' });
+                    var textBlob = new Blob([plain], { type: 'text/plain' });
+                    var item = new ClipboardItem({
+                        'text/html': htmlBlob,
+                        'text/plain': textBlob
+                    });
+                    navigator.clipboard.write([item]).catch(function() {
+                        fallbackCopyRich(plain, wrappedHtml);
+                    });
+                    return;
+                } catch (e) {
+                    // Fall through to fallback
+                }
+            }
+            fallbackCopyRich(plain, wrappedHtml);
+        }
+        
+        function fallbackCopyRich(plain, html) {
+            // Fallback: use execCommand with a hidden richtext div
+            var container = document.createElement('div');
+            container.innerHTML = html;
+            container.style.position = 'fixed';
+            container.style.left = '-9999px';
+            container.style.top = '0';
+            container.style.opacity = '0';
+            document.body.appendChild(container);
+            
+            var range = document.createRange();
+            range.selectNodeContents(container);
+            var sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+            
+            try {
+                document.execCommand('copy');
+            } catch (e) {
+                // Last resort: plain text
+                copyPlainText(plain);
+            }
+            
+            sel.removeAllRanges();
+            document.body.removeChild(container);
+        }
+        
+        function copyPlainText(text) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).catch(function() {
+                    var ta = document.createElement('textarea');
+                    ta.value = text;
+                    ta.style.position = 'fixed';
+                    ta.style.left = '-9999px';
+                    document.body.appendChild(ta);
+                    ta.select();
+                    try { document.execCommand('copy'); } catch (e) {}
+                    document.body.removeChild(ta);
+                });
+            }
+        }
+        
         function skipNext() {
-            if (currentIndex >= translations.length) return;
+            if (currentIndex >= translationsPlain.length) return;
             currentIndex++;
             updateUI();
         }
         
         function resetSequence() {
             currentIndex = 0;
+            copiedText.className = 'preview-empty';
+            copiedText.textContent = 'Nothing copied yet';
+            copiedNum.textContent = '—';
             updateUI();
-        }
-        
-        function copyToClipboard(text) {
-            // Try modern API first
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(text).catch(function() {
-                    fallbackCopy(text);
-                });
-            } else {
-                fallbackCopy(text);
-            }
-        }
-        
-        function fallbackCopy(text) {
-            var ta = document.createElement('textarea');
-            ta.value = text;
-            ta.style.position = 'fixed';
-            ta.style.left = '-9999px';
-            document.body.appendChild(ta);
-            ta.select();
-            try {
-                document.execCommand('copy');
-            } catch (e) {
-                console.error('Copy failed', e);
-            }
-            document.body.removeChild(ta);
         }
         
         function generateExcerpt(paras) {
@@ -409,7 +666,7 @@
         }
         
         function copyExcerpt() {
-            copyToClipboard(excerptText.value);
+            copyPlainText(excerptText.value);
             alert('Excerpt copied!');
         }
         
@@ -417,8 +674,11 @@
             englishInput.innerHTML = '';
             translationInput.innerHTML = '';
             resultsSection.className = 'section';
-            translations = [];
+            translationsPlain = [];
+            translationsHtml = [];
+            englishPlain = [];
             currentIndex = 0;
+            paraGrid.innerHTML = '';
         }
     </script>
 </body>
