@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CCOAN Translation Tool</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        h1 { color: #2c3e50; }
+        .section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .input-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .input-box h3 { margin-top: 0; }
+        .input-box.english h3 { color: #3498db; }
+        .input-box.translation h3 { color: #27ae60; }
+        .input-area {
+            width: 100%;
+            min-height: 200px;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            line-height: 1.6;
+            overflow-y: auto;
+        }
+        .input-area:focus { border-color: #3498db; outline: none; }
+        .btn {
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        .btn-primary { background: #3498db; color: white; }
+        .btn-primary:hover { background: #2980b9; }
+        .btn-success { background: #27ae60; color: white; }
+        .btn-success:hover { background: #219a52; }
+        .btn-warning { background: #f1c40f; color: #000; }
+        .btn-secondary { background: #95a5a6; color: white; }
+        
+        #resultsSection { display: none; }
+        #resultsSection.show { display: block; }
+        
+        .stats {
+            background: #d4edda;
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+        
+        .copy-box {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .copy-box h3 { margin-top: 0; color: #856404; }
+        
+        #previewBox {
+            background: white;
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+        #previewLabel {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        #previewText {
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        #feedback {
+            display: inline-block;
+            margin-left: 15px;
+            color: #27ae60;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        #feedback.show { opacity: 1; }
+        
+        .counter {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        #doneMessage {
+            display: none;
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 15px;
+        }
+        #doneMessage.show { display: block; }
+        
+        .excerpt-box {
+            background: #e8f4f8;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 20px;
+        }
+        .excerpt-box h4 { margin-top: 0; }
+        #excerptText {
+            width: 100%;
+            height: 80px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        #charCount { font-size: 13px; color: #666; margin-top: 5px; }
+    </style>
+</head>
+<body>
+    <h1>CCOAN Translation Tool</h1>
+    
+    <div class="section">
+        <div class="input-row">
+            <div class="input-box english">
+                <h3>🇬🇧 English (Original)</h3>
+                <div id="englishInput" class="input-area" contenteditable="true"></div>
+            </div>
+            <div class="input-box translation">
+                <h3>🌍 Translation</h3>
+                <div id="translationInput" class="input-area" contenteditable="true"></div>
+            </div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 20px;">
+            <button class="btn btn-primary" id="alignBtn">Align Paragraphs</button>
+            <button class="btn btn-secondary" id="clearBtn">Clear All</button>
+        </div>
+    </div>
+
+    <div id="resultsSection" class="section">
+        <h2>Results</h2>
+        
+        <div id="statsBox" class="stats"></div>
+        
+        <div class="copy-box">
+            <h3>⚡ Sequential Copy Mode</h3>
+            <p>Click the button to copy each translation paragraph. Then paste (Ctrl+V) into WPML.</p>
+            
+            <div style="margin: 15px 0;">
+                <button class="btn btn-secondary" id="resetBtn">⟲ Reset</button>
+                <button class="btn btn-warning" id="skipBtn">⏭ Skip</button>
+                <button class="btn btn-success" id="copyNextBtn" style="font-size: 18px; padding: 15px 30px;">
+                    📋 Copy & Next (<span id="currentNum">1</span> of <span id="totalNum">0</span>)
+                </button>
+                <span id="feedback">✓ Copied!</span>
+            </div>
+            
+            <div id="previewLabel">NEXT TO COPY:</div>
+            <div id="previewBox">
+                <div id="previewText"></div>
+            </div>
+            
+            <div id="doneMessage">
+                <strong>✓ All translations copied!</strong> Don't forget to copy the Excerpt below.
+            </div>
+        </div>
+        
+        <div class="excerpt-box">
+            <h4>Translated Excerpt (340-350 characters)</h4>
+            <textarea id="excerptText" readonly></textarea>
+            <div id="charCount">0 characters</div>
+            <button class="btn btn-success" id="copyExcerptBtn" style="margin-top: 10px;">Copy Excerpt</button>
+        </div>
+    </div>
+
+    <script>
+        // State
+        var currentIndex = 0;
+        var translations = [];
+        
+        // DOM elements
+        var englishInput = document.getElementById('englishInput');
+        var translationInput = document.getElementById('translationInput');
+        var resultsSection = document.getElementById('resultsSection');
+        var statsBox = document.getElementById('statsBox');
+        var currentNum = document.getElementById('currentNum');
+        var totalNum = document.getElementById('totalNum');
+        var previewText = document.getElementById('previewText');
+        var feedback = document.getElementById('feedback');
+        var doneMessage = document.getElementById('doneMessage');
+        var excerptText = document.getElementById('excerptText');
+        var charCount = document.getElementById('charCount');
+        var copyNextBtn = document.getElementById('copyNextBtn');
+        
+        // Button handlers
+        document.getElementById('alignBtn').onclick = alignParagraphs;
+        document.getElementById('clearBtn').onclick = clearAll;
+        document.getElementById('resetBtn').onclick = resetSequence;
+        document.getElementById('skipBtn').onclick = skipNext;
+        document.getElementById('copyNextBtn').onclick = copyNext;
+        document.getElementById('copyExcerptBtn').onclick = copyExcerpt;
+        
+        // Keyboard handler
+        document.onkeydown = function(e) {
+            if (e.code === 'Space' || e.key === ' ') {
+                var tag = e.target.tagName;
+                if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+                if (e.target.contentEditable === 'true') return;
+                
+                if (resultsSection.className.indexOf('show') > -1) {
+                    if (currentIndex < translations.length) {
+                        e.preventDefault();
+                        copyNext();
+                    }
+                }
+            }
+        };
+        
+        function cleanHtml(html) {
+            var text = html;
+            // Remove MS Office tags
+            text = text.replace(/<o:p>[\s\S]*?<\/o:p>/gi, '');
+            text = text.replace(/<\/?(o|w|m|v):[^>]*>/gi, '');
+            text = text.replace(/<!--[\s\S]*?-->/gi, '');
+            // Remove spans/fonts
+            text = text.replace(/<span[^>]*>([\s\S]*?)<\/span>/gi, '$1');
+            text = text.replace(/<font[^>]*>([\s\S]*?)<\/font>/gi, '$1');
+            // Remove attributes
+            text = text.replace(/\s+(style|class|lang|align)="[^"]*"/gi, '');
+            // Convert blocks to newlines
+            text = text.replace(/<\/p>/gi, '\n\n');
+            text = text.replace(/<p[^>]*>/gi, '');
+            text = text.replace(/<br\s*\/?>/gi, '\n');
+            text = text.replace(/<\/div>/gi, '\n');
+            text = text.replace(/<div[^>]*>/gi, '');
+            // Remove remaining tags
+            text = text.replace(/<[^>]+>/gi, '');
+            // Clean entities
+            text = text.replace(/&nbsp;/gi, ' ');
+            text = text.replace(/&amp;/gi, '&');
+            text = text.replace(/&lt;/gi, '<');
+            text = text.replace(/&gt;/gi, '>');
+            // Normalize whitespace
+            text = text.replace(/\r\n/g, '\n');
+            text = text.replace(/\n{3,}/g, '\n\n');
+            return text.trim();
+        }
+        
+        function getParagraphs(element) {
+            var html = element.innerHTML;
+            var cleaned = cleanHtml(html);
+            var paras = cleaned.split(/\n\n+/);
+            var result = [];
+            for (var i = 0; i < paras.length; i++) {
+                var p = paras[i].replace(/\n/g, ' ').trim();
+                if (p.length > 0) {
+                    result.push(p);
+                }
+            }
+            return result;
+        }
+        
+        function alignParagraphs() {
+            var engParas = getParagraphs(englishInput);
+            var transParas = getParagraphs(translationInput);
+            
+            if (engParas.length < 2 || transParas.length < 2) {
+                alert('Please paste content from both Word documents first.');
+                return;
+            }
+            
+            translations = transParas;
+            currentIndex = 0;
+            
+            // Show results
+            resultsSection.className = 'section show';
+            
+            // Stats
+            var match = engParas.length === transParas.length;
+            statsBox.innerHTML = '<strong>English:</strong> ' + engParas.length + ' paragraphs | ' +
+                '<strong>Translation:</strong> ' + transParas.length + ' paragraphs | ' +
+                '<strong>Status:</strong> ' + (match ? '✓ Perfect match!' : '⚠ Mismatch');
+            
+            // Update UI
+            updateUI();
+            
+            // Generate excerpt
+            generateExcerpt(transParas);
+        }
+        
+        function updateUI() {
+            totalNum.textContent = translations.length;
+            
+            if (currentIndex >= translations.length) {
+                currentNum.textContent = translations.length;
+                copyNextBtn.innerHTML = '✓ All Done!';
+                copyNextBtn.disabled = true;
+                copyNextBtn.style.background = '#95a5a6';
+                previewText.textContent = '';
+                doneMessage.className = 'show';
+            } else {
+                currentNum.textContent = currentIndex + 1;
+                copyNextBtn.innerHTML = '📋 Copy & Next (' + (currentIndex + 1) + ' of ' + translations.length + ')';
+                copyNextBtn.disabled = false;
+                copyNextBtn.style.background = '#27ae60';
+                previewText.textContent = translations[currentIndex];
+                doneMessage.className = '';
+            }
+        }
+        
+        function copyNext() {
+            if (currentIndex >= translations.length) return;
+            
+            var text = translations[currentIndex];
+            
+            // Copy to clipboard
+            copyToClipboard(text);
+            
+            // Show feedback
+            feedback.className = 'show';
+            setTimeout(function() { feedback.className = ''; }, 1000);
+            
+            // Move to next
+            currentIndex++;
+            updateUI();
+        }
+        
+        function skipNext() {
+            if (currentIndex >= translations.length) return;
+            currentIndex++;
+            updateUI();
+        }
+        
+        function resetSequence() {
+            currentIndex = 0;
+            updateUI();
+        }
+        
+        function copyToClipboard(text) {
+            // Try modern API first
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).catch(function() {
+                    fallbackCopy(text);
+                });
+            } else {
+                fallbackCopy(text);
+            }
+        }
+        
+        function fallbackCopy(text) {
+            var ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.left = '-9999px';
+            document.body.appendChild(ta);
+            ta.select();
+            try {
+                document.execCommand('copy');
+            } catch (e) {
+                console.error('Copy failed', e);
+            }
+            document.body.removeChild(ta);
+        }
+        
+        function generateExcerpt(paras) {
+            if (paras.length < 2) return;
+            
+            var text = paras[1]; // First content paragraph (skip title)
+            if (paras.length > 2) {
+                text += ' ' + paras[2];
+            }
+            
+            // Trim to ~345 chars
+            if (text.length > 347) {
+                text = text.substring(0, 347);
+                var lastSpace = text.lastIndexOf(' ');
+                if (lastSpace > 300) {
+                    text = text.substring(0, lastSpace);
+                }
+            }
+            
+            // Remove trailing punctuation and add ellipsis
+            text = text.replace(/[.,;:!?]+$/, '') + '...';
+            
+            excerptText.value = text;
+            charCount.textContent = text.length + ' characters';
+        }
+        
+        function copyExcerpt() {
+            copyToClipboard(excerptText.value);
+            alert('Excerpt copied!');
+        }
+        
+        function clearAll() {
+            englishInput.innerHTML = '';
+            translationInput.innerHTML = '';
+            resultsSection.className = 'section';
+            translations = [];
+            currentIndex = 0;
+        }
+    </script>
+</body>
+</html>
