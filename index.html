@@ -3,683 +3,750 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CCOAN Translation Tool</title>
+    <title>CCOAN Blog Formatter</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
-        * { box-sizing: border-box; }
+        :root {
+            --brand:       #1E2470;
+            --brandLight:  #2A32A0;
+            --brandBright: #3D48C8;
+            --brandDim:    rgba(30,36,112,0.18);
+            --brandBorder: rgba(30,36,112,0.45);
+            --brandSoft:   rgba(61,72,200,0.12);
+            --accent:      #4A6CF7;
+            --accentDim:   rgba(74,108,247,0.14);
+            --accentBorder:rgba(74,108,247,0.35);
+            --bg:          #0B0D14;
+            --surface:     #12151E;
+            --surfaceRaised:#181C28;
+            --border:      #1E2230;
+            --borderLight: #282E40;
+            --text:        #E8E8EC;
+            --textMuted:   #8890A4;
+            --textDim:     #5A6178;
+            --white:       #FFFFFF;
+            --red:         #E04040;
+            --redDim:      rgba(224,64,64,0.12);
+            --green:       #2EAA5A;
+            --greenDim:    rgba(46,170,90,0.12);
+            --orange:      #E8922A;
+            --orangeDim:   rgba(232,146,42,0.12);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-            background: #f5f5f5;
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
         }
-        h1 { color: #2c3e50; }
-        .section {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+
+        /* Subtle grid background */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(74,108,247,0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(74,108,247,0.04) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+            z-index: 0;
         }
-        .input-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
+
+        /* Glowing orb top */
+        body::after {
+            content: '';
+            position: fixed;
+            top: -200px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 700px;
+            height: 400px;
+            background: radial-gradient(ellipse, rgba(30,36,112,0.55) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
         }
-        .input-box h3 { margin-top: 0; }
-        .input-box.english h3 { color: #3498db; }
-        .input-box.translation h3 { color: #27ae60; }
-        .input-area {
-            width: 100%;
-            min-height: 200px;
-            padding: 12px;
-            border: 2px solid #ddd;
-            border-radius: 6px;
-            font-size: 14px;
-            line-height: 1.6;
-            overflow-y: auto;
-        }
-        .input-area:focus { border-color: #3498db; outline: none; }
-        .btn {
-            padding: 12px 24px;
-            font-size: 16px;
-            font-weight: 600;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            margin-right: 10px;
-        }
-        .btn-primary { background: #3498db; color: white; }
-        .btn-primary:hover { background: #2980b9; }
-        .btn-success { background: #27ae60; color: white; }
-        .btn-success:hover { background: #219a52; }
-        .btn-warning { background: #f1c40f; color: #000; }
-        .btn-secondary { background: #95a5a6; color: white; }
-        
-        #resultsSection { display: none; }
-        #resultsSection.show { display: block; }
-        
-        .stats {
-            background: #d4edda;
-            padding: 10px 15px;
-            border-radius: 6px;
-            margin-bottom: 15px;
-        }
-        
-        /* Paragraph alignment display */
-        .para-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 0;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            overflow: hidden;
-            margin-bottom: 20px;
-            max-height: 400px;
-            overflow-y: auto;
-        }
-        .para-grid-header {
-            font-weight: 700;
-            font-size: 13px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            padding: 10px 14px;
-            position: sticky;
-            top: 0;
+
+        .wrapper {
+            position: relative;
             z-index: 1;
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 0 20px 60px;
         }
-        .para-grid-header.eng { background: #d6eaf8; color: #2471a3; border-right: 1px solid #ddd; }
-        .para-grid-header.trans { background: #d5f5e3; color: #1e8449; }
-        
-        .para-row-eng, .para-row-trans {
-            padding: 10px 14px;
-            font-size: 13px;
-            line-height: 1.5;
-            border-top: 1px solid #eee;
+
+        /* ── HEADER ── */
+        .header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 48px 0 36px;
+            position: relative;
         }
-        .para-row-eng { border-right: 1px solid #ddd; background: #fafcfe; }
-        .para-row-trans { background: #fafef9; }
-        
-        .para-num {
-            display: inline-block;
-            background: #2c3e50;
-            color: white;
-            font-size: 11px;
-            font-weight: 700;
-            width: 22px;
-            height: 22px;
-            line-height: 22px;
-            text-align: center;
-            border-radius: 50%;
-            margin-right: 8px;
-            flex-shrink: 0;
-            vertical-align: top;
-        }
-        .para-row-eng .para-num { background: #3498db; }
-        .para-row-trans .para-num { background: #27ae60; }
-        
-        .para-text {
-            display: inline;
-        }
-        
-        .para-row-eng.active, .para-row-trans.active {
-            background: #fff9e6;
-            outline: 2px solid #f1c40f;
-            outline-offset: -2px;
-        }
-        .para-row-eng.copied, .para-row-trans.copied {
-            background: #eafaf1;
-        }
-        
-        /* Copy section */
-        .copy-box {
-            background: #fff3cd;
-            border: 2px solid #ffc107;
-            padding: 20px;
-            border-radius: 8px;
+
+        .logo {
+            height: 64px;
             margin-bottom: 20px;
+            filter: drop-shadow(0 4px 18px rgba(74,108,247,0.35));
         }
-        .copy-box h3 { margin-top: 0; color: #856404; }
-        
-        .preview-pair {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
-            margin: 15px 0;
+
+        .header-title {
+            font-family: 'Cinzel', serif;
+            font-size: 32px;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            background: linear-gradient(135deg, #fff 30%, #8899ff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-align: center;
         }
-        
-        .preview-card {
-            border-radius: 6px;
-            padding: 12px 15px;
-            min-height: 80px;
-            max-height: 140px;
-            overflow-y: auto;
+
+        .header-sub {
+            margin-top: 8px;
             font-size: 14px;
+            color: var(--textMuted);
+            letter-spacing: 0.04em;
+        }
+
+        .divider {
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--brandBorder), var(--accentBorder), var(--brandBorder), transparent);
+            margin: 28px 0;
+        }
+
+        /* ── INSTRUCTIONS ── */
+        .instructions {
+            background: linear-gradient(135deg, rgba(30,36,112,0.22) 0%, rgba(74,108,247,0.08) 100%);
+            border: 1px solid var(--brandBorder);
+            border-left: 3px solid var(--accent);
+            padding: 20px 24px;
+            border-radius: 10px;
+            margin-bottom: 24px;
+        }
+
+        .instructions h3 {
+            font-family: 'Cinzel', serif;
+            font-size: 13px;
+            letter-spacing: 0.1em;
+            color: var(--accent);
+            margin-bottom: 14px;
+            text-transform: uppercase;
+        }
+
+        .instructions ol {
+            padding-left: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+        }
+
+        .instructions li {
+            font-size: 13.5px;
+            color: var(--textMuted);
             line-height: 1.5;
         }
-        .preview-card-label {
+
+        .instructions li strong {
+            color: var(--text);
+        }
+
+        /* ── SECTION CARD ── */
+        .section {
+            background: var(--surface);
+            border: 1px solid var(--borderLight);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.35), 0 1px 0 rgba(255,255,255,0.03) inset;
+        }
+
+        label {
+            display: block;
             font-size: 12px;
-            font-weight: 700;
+            font-weight: 600;
+            letter-spacing: 0.1em;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 6px;
+            color: var(--textMuted);
+            margin-bottom: 12px;
         }
-        
-        .preview-copied {
-            background: #eafaf1;
-            border: 2px solid #27ae60;
+
+        label .hint {
+            font-weight: 400;
+            letter-spacing: 0;
+            text-transform: none;
+            color: var(--textDim);
+            margin-left: 6px;
         }
-        .preview-copied .preview-card-label { color: #1e8449; }
-        
-        .preview-next {
-            background: #eaf2f8;
-            border: 2px solid #3498db;
+
+        /* ── INPUT AREA (stays WHITE per requirement) ── */
+        #inputArea {
+            width: 100%;
+            min-height: 280px;
+            padding: 16px;
+            border: 1px solid #d0d5e8;
+            border-radius: 8px;
+            font-size: 14px;
+            line-height: 1.7;
+            overflow-y: auto;
+            background: #ffffff;
+            color: #1a1a2e;
+            font-family: 'DM Sans', sans-serif;
+            transition: border-color 0.2s, box-shadow 0.2s;
         }
-        .preview-next .preview-card-label { color: #2471a3; }
-        
-        .preview-empty {
-            color: #999;
-            font-style: italic;
+
+        #inputArea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accentDim);
         }
-        
-        #feedback {
+
+        #inputArea:empty:before {
+            content: "Paste the entire blog content from Word here...\A\ABold and italic text will be preserved!";
+            white-space: pre-wrap;
+            color: #aab0c8;
+        }
+
+        .note-box {
+            background: var(--greenDim);
+            border: 1px solid rgba(46,170,90,0.3);
+            border-radius: 7px;
+            padding: 10px 14px;
+            margin-top: 12px;
+            font-size: 12.5px;
+            color: #5ecf8a;
+        }
+
+        /* ── PREVIEW ── */
+        .preview {
+            background: rgba(232,146,42,0.07);
+            border: 1px solid rgba(232,146,42,0.3);
+            padding: 14px 18px;
+            border-radius: 8px;
+            margin-top: 14px;
+            display: none;
+        }
+
+        .preview.show { display: block; }
+
+        .preview h4 {
+            font-size: 12px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--orange);
+            margin-bottom: 10px;
+        }
+
+        .preview ul {
+            padding-left: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .preview li {
+            font-size: 13px;
+            color: var(--textMuted);
+        }
+
+        .detected { color: var(--accent); font-weight: 600; }
+
+        /* ── BUTTONS ── */
+        .btn-row {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin: 4px 0 20px;
+        }
+
+        .btn {
+            padding: 12px 28px;
+            font-size: 14px;
+            font-weight: 600;
+            font-family: 'DM Sans', sans-serif;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            letter-spacing: 0.02em;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: rgba(255,255,255,0);
+            transition: background 0.15s;
+        }
+
+        .btn:hover::after { background: rgba(255,255,255,0.07); }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--brandBright), var(--accent));
+            color: #fff;
+            box-shadow: 0 4px 18px rgba(74,108,247,0.35);
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 6px 24px rgba(74,108,247,0.5);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: var(--surfaceRaised);
+            color: var(--textMuted);
+            border: 1px solid var(--borderLight);
+        }
+
+        .btn-secondary:hover { color: var(--text); border-color: var(--textDim); }
+
+        .btn-copy {
+            background: linear-gradient(135deg, #1a7a40, var(--green));
+            color: #fff;
+            box-shadow: 0 4px 14px rgba(46,170,90,0.25);
+        }
+
+        .btn-copy:hover {
+            box-shadow: 0 6px 20px rgba(46,170,90,0.4);
+            transform: translateY(-1px);
+        }
+
+        .copy-feedback {
             display: inline-block;
-            margin-left: 15px;
-            color: #27ae60;
-            font-weight: bold;
+            margin-left: 10px;
+            color: var(--green);
+            font-weight: 600;
+            font-size: 13px;
             opacity: 0;
             transition: opacity 0.3s;
         }
-        #feedback.show { opacity: 1; }
-        
-        #doneMessage {
-            display: none;
-            background: #d4edda;
-            color: #155724;
-            padding: 15px;
-            border-radius: 6px;
-            margin-top: 15px;
+
+        .copy-feedback.show { opacity: 1; }
+
+        /* ── TABS ── */
+        .tab-container {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 18px;
+            border-bottom: 1px solid var(--borderLight);
+            padding-bottom: 0;
         }
-        #doneMessage.show { display: block; }
-        
-        .excerpt-box {
-            background: #e8f4f8;
-            padding: 15px;
-            border-radius: 6px;
-            margin-top: 20px;
+
+        .tab {
+            padding: 9px 20px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            color: var(--textDim);
+            transition: all 0.2s;
+            margin-bottom: -1px;
         }
-        .excerpt-box h4 { margin-top: 0; }
-        #excerptText {
+
+        .tab:hover { color: var(--textMuted); }
+
+        .tab.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* ── OUTPUT TEXTAREA ── */
+        textarea {
             width: 100%;
-            height: 80px;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 14px;
-        }
-        #charCount { font-size: 13px; color: #666; margin-top: 5px; }
-        
-        .spacebar-hint {
-            font-size: 12px;
-            color: #888;
-            margin-top: 8px;
-        }
-        .spacebar-hint kbd {
-            background: #eee;
-            border: 1px solid #ccc;
-            border-radius: 3px;
-            padding: 1px 6px;
-            font-size: 11px;
+            padding: 14px;
+            border: 1px solid var(--borderLight);
+            border-radius: 8px;
+            font-size: 13px;
+            line-height: 1.6;
+            resize: vertical;
             font-family: inherit;
+            background: var(--surfaceRaised);
+            color: var(--text);
+            transition: border-color 0.2s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--accentBorder);
+        }
+
+        #outputCode {
+            min-height: 220px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 11.5px;
+            background: #0d1017;
+            color: #a8b8d8;
+            border-color: var(--border);
+        }
+
+        .excerpt-output {
+            background: var(--surfaceRaised);
+            border: 1px solid var(--borderLight);
+            padding: 16px;
+            border-radius: 8px;
+            margin-top: 4px;
+        }
+
+        .excerpt-output h4 {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--textMuted);
+            margin-bottom: 10px;
+        }
+
+        .char-count { font-size: 12px; margin-top: 6px; color: var(--textDim); }
+        .char-count.good  { color: var(--green); }
+        .char-count.warning { color: var(--orange); }
+
+        /* ── FOOTER ── */
+        .footer {
+            text-align: center;
+            color: var(--textDim);
+            font-size: 12px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+            letter-spacing: 0.04em;
         }
     </style>
 </head>
 <body>
-    <h1>CCOAN Translation Tool</h1>
-    
+<div class="wrapper">
+
+    <!-- HEADER -->
+    <div class="header">
+        <img class="logo"
+             src="https://ccoan.com/almere/wp-content/uploads/sites/12/2024/04/CCOAN-Logo-White-950w-With-Shadow-2.png"
+             alt="CCOAN Logo"
+             onerror="this.style.display='none'">
+        <h1 class="header-title">Blog Formatter</h1>
+        <p class="header-sub">Paste once — get formatted WordPress blocks + excerpt</p>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- INSTRUCTIONS -->
+    <div class="instructions">
+        <h3>How to Use</h3>
+        <ol>
+            <li><strong>Copy</strong> the entire blog content from your Word document (Ctrl+A, Ctrl+C)</li>
+            <li><strong>Paste</strong> it in the box below — bold &amp; italic formatting is preserved</li>
+            <li>Click <strong>Format for WordPress</strong></li>
+            <li>In WordPress: Click the <strong>⋮ menu</strong> (top right) → <strong>Code editor</strong></li>
+            <li><strong>Select all</strong> existing code (Ctrl+A) and <strong>paste</strong> the generated code (Ctrl+V)</li>
+            <li>Click <strong>⋮ menu</strong> → <strong>Visual editor</strong> to return to normal view</li>
+            <li>Add your images to the placeholder spots</li>
+        </ol>
+    </div>
+
+    <!-- INPUT SECTION -->
     <div class="section">
-        <div class="input-row">
-            <div class="input-box english">
-                <h3>🇬🇧 English (Original)</h3>
-                <div id="englishInput" class="input-area" contenteditable="true"></div>
-            </div>
-            <div class="input-box translation">
-                <h3>🌐 Translation</h3>
-                <div id="translationInput" class="input-area" contenteditable="true"></div>
-            </div>
+        <label>Paste Your Blog Content Here <span class="hint">(from Word document)</span></label>
+        <div id="inputArea" contenteditable="true"></div>
+        <div class="note-box">
+            <strong>✓ Bold and italic text from Word will be preserved when you paste</strong>
         </div>
-        
-        <div style="text-align: center; margin-top: 20px;">
-            <button class="btn btn-primary" id="alignBtn">Align Paragraphs</button>
-            <button class="btn btn-secondary" id="clearBtn">Clear All</button>
+        <div id="preview" class="preview">
+            <h4>📋 Detected Structure</h4>
+            <ul id="previewList"></ul>
         </div>
     </div>
 
-    <div id="resultsSection" class="section">
-        <h2>Results</h2>
-        
-        <div id="statsBox" class="stats"></div>
-        
-        <!-- Numbered paragraph grid -->
-        <div id="paraGrid" class="para-grid"></div>
-        
-        <div class="copy-box">
-            <h3>⚡ Sequential Copy Mode</h3>
-            <p>Click the button to copy each translation paragraph <strong>with formatting</strong>. Then paste (Ctrl+V) into WPML.</p>
-            
-            <div style="margin: 15px 0;">
-                <button class="btn btn-secondary" id="resetBtn">⟲ Reset</button>
-                <button class="btn btn-warning" id="skipBtn">⭢ Skip</button>
-                <button class="btn btn-success" id="copyNextBtn" style="font-size: 18px; padding: 15px 30px;">
-                    📋 Copy & Next (<span id="currentNum">1</span> of <span id="totalNum">0</span>)
-                </button>
-                <span id="feedback">✔ Copied!</span>
-            </div>
-            
-            <div class="spacebar-hint">💡 Tip: Press <kbd>Space</kbd> to copy &amp; advance (when not typing in a text box)</div>
-            
-            <div class="preview-pair">
-                <div class="preview-card preview-copied">
-                    <div class="preview-card-label">✔ Just Copied (¶<span id="copiedNum">—</span>)</div>
-                    <div id="copiedText" class="preview-empty">Nothing copied yet</div>
-                </div>
-                <div class="preview-card preview-next">
-                    <div class="preview-card-label">📋 Next to Copy (¶<span id="nextNum">1</span>)</div>
-                    <div id="previewText"></div>
-                </div>
-            </div>
-            
-            <div id="doneMessage">
-                <strong>✔ All translations copied!</strong> Don't forget to copy the Excerpt below.
+    <!-- ACTION BUTTONS -->
+    <div class="btn-row">
+        <button class="btn btn-primary" onclick="formatBlog()">Format for WordPress</button>
+        <button class="btn btn-secondary" onclick="clearAll()">Clear All</button>
+    </div>
+
+    <!-- OUTPUT SECTION -->
+    <div class="section">
+        <div class="tab-container">
+            <button class="tab active" onclick="switchTab('blocks')">WordPress Blocks</button>
+            <button class="tab" onclick="switchTab('excerpt')">Excerpt</button>
+        </div>
+
+        <div id="blocksTab" class="tab-content active">
+            <label>Generated WordPress Block Code <span class="hint">(paste in Code Editor)</span></label>
+            <textarea id="outputCode" readonly placeholder="WordPress block code will appear here..."></textarea>
+            <div style="margin-top:14px;">
+                <button class="btn btn-copy" onclick="copyCode()">Copy Block Code</button>
+                <span id="copyFeedback" class="copy-feedback">✓ Copied!</span>
             </div>
         </div>
-        
-        <div class="excerpt-box">
-            <h4>Translated Excerpt (340-350 characters)</h4>
-            <textarea id="excerptText" readonly></textarea>
-            <div id="charCount">0 characters</div>
-            <button class="btn btn-success" id="copyExcerptBtn" style="margin-top: 10px;">Copy Excerpt</button>
+
+        <div id="excerptTab" class="tab-content">
+            <div class="excerpt-output">
+                <h4>Generated Excerpt (340–350 characters)</h4>
+                <textarea id="excerptOutput" rows="4" style="margin-top:8px;"></textarea>
+                <div class="char-count" id="excerptCharCount">0 / 350 characters</div>
+                <div style="margin-top:12px;">
+                    <button class="btn btn-copy" onclick="copyExcerpt()">Copy Excerpt</button>
+                    <span id="excerptCopyFeedback" class="copy-feedback">✓ Copied!</span>
+                </div>
+            </div>
         </div>
     </div>
 
-    <script>
-        // State
-        var currentIndex = 0;
-        var translationsPlain = [];  // plain text versions
-        var translationsHtml = [];   // HTML versions (with bold/italic)
-        var englishPlain = [];
-        
-        // DOM elements
-        var englishInput = document.getElementById('englishInput');
-        var translationInput = document.getElementById('translationInput');
-        var resultsSection = document.getElementById('resultsSection');
-        var statsBox = document.getElementById('statsBox');
-        var currentNum = document.getElementById('currentNum');
-        var totalNum = document.getElementById('totalNum');
-        var previewText = document.getElementById('previewText');
-        var copiedText = document.getElementById('copiedText');
-        var copiedNum = document.getElementById('copiedNum');
-        var nextNum = document.getElementById('nextNum');
-        var feedback = document.getElementById('feedback');
-        var doneMessage = document.getElementById('doneMessage');
-        var excerptText = document.getElementById('excerptText');
-        var charCount = document.getElementById('charCount');
-        var copyNextBtn = document.getElementById('copyNextBtn');
-        var paraGrid = document.getElementById('paraGrid');
-        
-        // Button handlers
-        document.getElementById('alignBtn').onclick = alignParagraphs;
-        document.getElementById('clearBtn').onclick = clearAll;
-        document.getElementById('resetBtn').onclick = resetSequence;
-        document.getElementById('skipBtn').onclick = skipNext;
-        document.getElementById('copyNextBtn').onclick = copyNext;
-        document.getElementById('copyExcerptBtn').onclick = copyExcerpt;
-        
-        // Keyboard handler
-        document.onkeydown = function(e) {
-            if (e.code === 'Space' || e.key === ' ') {
-                var tag = e.target.tagName;
-                if (tag === 'INPUT' || tag === 'TEXTAREA') return;
-                if (e.target.contentEditable === 'true') return;
-                
-                if (resultsSection.className.indexOf('show') > -1) {
-                    if (currentIndex < translationsPlain.length) {
-                        e.preventDefault();
-                        copyNext();
-                    }
-                }
-            }
-        };
-        
-        // Clean HTML but PRESERVE bold/italic tags
-        function cleanHtmlPreserveFormatting(html) {
-            var text = html;
-            // Remove MS Office tags
-            text = text.replace(/<o:p>[\s\S]*?<\/o:p>/gi, '');
-            text = text.replace(/<\/?(o|w|m|v):[^>]*>/gi, '');
-            text = text.replace(/<!--[\s\S]*?-->/gi, '');
-            // Remove spans but keep content
-            text = text.replace(/<span[^>]*>([\s\S]*?)<\/span>/gi, '$1');
-            text = text.replace(/<font[^>]*>([\s\S]*?)<\/font>/gi, '$1');
-            // Remove most attributes BUT keep bold/italic tags intact
-            // First, protect b/strong/i/em tags
-            text = text.replace(/<(\/?)b(\s[^>]*)?>/gi, '[[B_$1]]');
-            text = text.replace(/<(\/?)strong(\s[^>]*)?>/gi, '[[STRONG_$1]]');
-            text = text.replace(/<(\/?)i(\s[^>]*)?>/gi, '[[I_$1]]');
-            text = text.replace(/<(\/?)em(\s[^>]*)?>/gi, '[[EM_$1]]');
-            text = text.replace(/<(\/?)u(\s[^>]*)?>/gi, '[[U_$1]]');
-            // Convert blocks to newlines
-            text = text.replace(/<\/p>/gi, '\n\n');
-            text = text.replace(/<p[^>]*>/gi, '');
-            text = text.replace(/<br\s*\/?>/gi, '\n');
-            text = text.replace(/<\/div>/gi, '\n');
-            text = text.replace(/<div[^>]*>/gi, '');
-            // Remove remaining tags (but not our placeholders)
-            text = text.replace(/<[^>]+>/gi, '');
-            // Restore protected tags (clean, no attributes)
-            text = text.replace(/\[\[B_\]\]/gi, '<b>');
-            text = text.replace(/\[\[B_\/\]\]/gi, '</b>');
-            text = text.replace(/\[\[STRONG_\]\]/gi, '<strong>');
-            text = text.replace(/\[\[STRONG_\/\]\]/gi, '</strong>');
-            text = text.replace(/\[\[I_\]\]/gi, '<i>');
-            text = text.replace(/\[\[I_\/\]\]/gi, '</i>');
-            text = text.replace(/\[\[EM_\]\]/gi, '<em>');
-            text = text.replace(/\[\[EM_\/\]\]/gi, '</em>');
-            text = text.replace(/\[\[U_\]\]/gi, '<u>');
-            text = text.replace(/\[\[U_\/\]\]/gi, '</u>');
-            // Clean entities
-            text = text.replace(/&nbsp;/gi, ' ');
-            text = text.replace(/&amp;/gi, '&');
-            text = text.replace(/&lt;/gi, '<');
-            text = text.replace(/&gt;/gi, '>');
-            // Normalize whitespace
-            text = text.replace(/\r\n/g, '\n');
-            text = text.replace(/\n{3,}/g, '\n\n');
-            return text.trim();
+    <div class="footer">
+        CCOAN Almere &nbsp;·&nbsp; Blog Formatter &nbsp;·&nbsp; Internal Tool
+    </div>
+
+</div>
+
+<script>
+    function switchTab(tab) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        if (tab === 'blocks') {
+            document.querySelectorAll('.tab')[0].classList.add('active');
+            document.getElementById('blocksTab').classList.add('active');
+        } else {
+            document.querySelectorAll('.tab')[1].classList.add('active');
+            document.getElementById('excerptTab').classList.add('active');
         }
-        
-        function stripAllTags(html) {
-            return html.replace(/<[^>]+>/gi, '');
+    }
+
+    function cleanWordHtml(html) {
+        let cleaned = html
+            .replace(/<b\b[^>]*>/gi, '<strong>')
+            .replace(/<\/b>/gi, '</strong>')
+            .replace(/<i\b[^>]*>/gi, '<em>')
+            .replace(/<\/i>/gi, '</em>');
+        cleaned = cleaned
+            .replace(/<strong[^>]*>/gi, '<strong>')
+            .replace(/<em[^>]*>/gi, '<em>');
+        cleaned = cleaned
+            .replace(/<o:p>[\s\S]*?<\/o:p>/gi, '')
+            .replace(/<\/?(o|w|m|v):[^>]*>/gi, '')
+            .replace(/<!--\[if[\s\S]*?<!\[endif\]-->/gi, '')
+            .replace(/<!--[\s\S]*?-->/gi, '');
+        cleaned = cleaned
+            .replace(/<span[^>]*>([\s\S]*?)<\/span>/gi, '$1')
+            .replace(/<font[^>]*>([\s\S]*?)<\/font>/gi, '$1');
+        cleaned = cleaned
+            .replace(/\s+style="[^"]*"/gi, '')
+            .replace(/\s+class="[^"]*"/gi, '')
+            .replace(/\s+lang="[^"]*"/gi, '')
+            .replace(/\s+align="[^"]*"/gi, '');
+        cleaned = cleaned.replace(/<p[^>]*>([\s\S]*?)<\/p>/gi, '$1\n\n');
+        cleaned = cleaned
+            .replace(/<div[^>]*>/gi, '\n')
+            .replace(/<\/div>/gi, '')
+            .replace(/<br\s*\/?>/gi, '\n');
+        cleaned = cleaned.replace(/<(?!\/?(?:strong|em)(?:\s|>))[^>]+>/gi, '');
+        cleaned = cleaned
+            .replace(/&nbsp;/gi, ' ')
+            .replace(/&amp;/gi, '&')
+            .replace(/&lt;/gi, '<')
+            .replace(/&gt;/gi, '>')
+            .replace(/&quot;/gi, '"')
+            .replace(/&#39;/gi, "'")
+            .replace(/\u00A0/g, ' ')
+            .replace(/\r\n/g, '\n')
+            .replace(/\r/g, '\n');
+        cleaned = cleaned
+            .replace(/<strong>\s*<\/strong>/gi, '')
+            .replace(/<em>\s*<\/em>/gi, '')
+            .replace(/<strong><\/strong>/gi, '')
+            .replace(/<em><\/em>/gi, '');
+        cleaned = cleaned
+            .replace(/<strong>\s*<strong>/gi, '<strong>')
+            .replace(/<\/strong>\s*<\/strong>/gi, '</strong>')
+            .replace(/<em>\s*<em>/gi, '<em>')
+            .replace(/<\/em>\s*<\/em>/gi, '</em>');
+        cleaned = cleaned.replace(/\n{3,}/g, '\n\n').trim();
+        return cleaned;
+    }
+
+    function getPlainText(html) {
+        return html.replace(/<[^>]*>/g, '').trim();
+    }
+
+    function isAllCaps(str) {
+        const cleaned = str.replace(/[^a-zA-Z]/g, '');
+        return cleaned.length > 3 && cleaned === cleaned.toUpperCase();
+    }
+
+    function isSectionTitle(text) {
+        const plainText = getPlainText(text).trim();
+        if (plainText.length < 5 || plainText.length > 200) return false;
+        return isAllCaps(plainText);
+    }
+
+    function splitIntoSentences(text) {
+        const plainText = getPlainText(text);
+        const cleaned = plainText
+            .replace(/Mr\./g, 'Mr‣').replace(/Mrs\./g, 'Mrs‣').replace(/Ms\./g, 'Ms‣')
+            .replace(/Dr\./g, 'Dr‣').replace(/Prof\./g, 'Prof‣').replace(/Rev\./g, 'Rev‣')
+            .replace(/St\./g, 'St‣').replace(/Jr\./g, 'Jr‣').replace(/Sr\./g, 'Sr‣')
+            .replace(/vs\./g, 'vs‣').replace(/etc\./g, 'etc‣')
+            .replace(/i\.e\./g, 'i‣e‣').replace(/e\.g\./g, 'e‣g‣');
+        const sentences = cleaned.split(/(?<=[.!?])\s+(?=[A-Z])/);
+        return sentences.map(s => s.replace(/‣/g, '.').trim()).filter(s => s.length > 0);
+    }
+
+    function generateExcerpt(paragraphs) {
+        if (paragraphs.length < 1) return '';
+        const para1 = getPlainText(paragraphs[0]);
+        const para2 = paragraphs.length > 1 ? getPlainText(paragraphs[1]) : '';
+        const sentences1 = splitIntoSentences(para1);
+        const sentences2 = splitIntoSentences(para2);
+        let excerpt = '';
+        if (sentences1.length > 0) excerpt = sentences1[0];
+        if (sentences2.length > 0) excerpt += ' ' + sentences2[0];
+        const minLength = 340, targetLength = 347;
+        let sentencePool = [...sentences2.slice(1)];
+        let wordIndex = 0, currentSentenceIndex = 0;
+        while (excerpt.length < minLength && sentencePool.length > currentSentenceIndex) {
+            const words = sentencePool[currentSentenceIndex].split(' ');
+            while (wordIndex < words.length && excerpt.length < targetLength) {
+                excerpt += ' ' + words[wordIndex++];
+            }
+            if (wordIndex >= words.length) { currentSentenceIndex++; wordIndex = 0; }
         }
-        
-        function getParagraphsBoth(element) {
-            var html = element.innerHTML;
-            var cleaned = cleanHtmlPreserveFormatting(html);
-            var paras = cleaned.split(/\n\n+/);
-            var resultHtml = [];
-            var resultPlain = [];
-            for (var i = 0; i < paras.length; i++) {
-                var p = paras[i].replace(/\n/g, ' ').trim();
-                if (p.length > 0 && stripAllTags(p).trim().length > 0) {
-                    resultHtml.push(p);
-                    resultPlain.push(stripAllTags(p));
-                }
-            }
-            return { html: resultHtml, plain: resultPlain };
+        if (excerpt.length > targetLength) {
+            excerpt = excerpt.substring(0, targetLength);
+            const lastSpace = excerpt.lastIndexOf(' ');
+            if (lastSpace > minLength) excerpt = excerpt.substring(0, lastSpace);
         }
-        
-        function alignParagraphs() {
-            var engData = getParagraphsBoth(englishInput);
-            var transData = getParagraphsBoth(translationInput);
-            
-            if (engData.plain.length < 2 || transData.plain.length < 2) {
-                alert('Please paste content from both Word documents first.');
-                return;
-            }
-            
-            translationsPlain = transData.plain;
-            translationsHtml = transData.html;
-            englishPlain = engData.plain;
-            currentIndex = 0;
-            
-            // Show results
-            resultsSection.className = 'section show';
-            
-            // Stats
-            var match = engData.plain.length === transData.plain.length;
-            statsBox.innerHTML = '<strong>English:</strong> ' + engData.plain.length + ' paragraphs | ' +
-                '<strong>Translation:</strong> ' + transData.plain.length + ' paragraphs | ' +
-                '<strong>Status:</strong> ' + (match ? '✔ Perfect match!' : '⚠ Mismatch — review numbering below');
-            
-            // Build numbered paragraph grid
-            buildParaGrid(engData.plain, transData.plain);
-            
-            // Update copy UI
-            updateUI();
-            
-            // Generate excerpt
-            generateExcerpt(transData.plain);
-            
-            // Scroll to results
-            resultsSection.scrollIntoView({ behavior: 'smooth' });
+        excerpt = excerpt.trimEnd().replace(/[.,;:!?]+$/, '') + '...';
+        return excerpt;
+    }
+
+    function formatBlog() {
+        const inputArea = document.getElementById('inputArea');
+        const rawHtml = inputArea.innerHTML;
+        if (!rawHtml || rawHtml.trim().length < 10) {
+            alert('Please paste your blog content first.');
+            return;
         }
-        
-        function buildParaGrid(engParas, transParas) {
-            var maxLen = Math.max(engParas.length, transParas.length);
-            var html = '';
-            html += '<div class="para-grid-header eng">🇬🇧 English</div>';
-            html += '<div class="para-grid-header trans">🌐 Translation</div>';
-            
-            for (var i = 0; i < maxLen; i++) {
-                var engText = i < engParas.length ? engParas[i] : '<span style="color:#ccc">—</span>';
-                var transText = i < transParas.length ? transParas[i] : '<span style="color:#ccc">—</span>';
-                
-                // Truncate for display (show first ~120 chars)
-                var engDisplay = i < engParas.length && engParas[i].length > 120 
-                    ? engParas[i].substring(0, 120) + '…' : engText;
-                var transDisplay = i < transParas.length && transParas[i].length > 120 
-                    ? transParas[i].substring(0, 120) + '…' : transText;
-                
-                html += '<div class="para-row-eng" id="eng-' + i + '"><span class="para-num">' + (i + 1) + '</span><span class="para-text">' + engDisplay + '</span></div>';
-                html += '<div class="para-row-trans" id="trans-' + i + '"><span class="para-num">' + (i + 1) + '</span><span class="para-text">' + transDisplay + '</span></div>';
-            }
-            
-            paraGrid.innerHTML = html;
+        const cleanedContent = cleanWordHtml(rawHtml);
+        const paragraphs = cleanedContent.split(/\n\n+/)
+            .map(p => p.replace(/\n/g, ' ').trim())
+            .filter(p => p.length > 0);
+        if (paragraphs.length < 3) {
+            alert('Content seems too short. Please paste the full blog content.');
+            return;
         }
-        
-        function highlightCurrentRow() {
-            // Remove all highlights
-            var rows = paraGrid.querySelectorAll('.para-row-eng, .para-row-trans');
-            for (var i = 0; i < rows.length; i++) {
-                rows[i].classList.remove('active');
-                rows[i].classList.remove('copied');
-            }
-            
-            // Mark copied rows
-            for (var j = 0; j < currentIndex; j++) {
-                var ce = document.getElementById('eng-' + j);
-                var ct = document.getElementById('trans-' + j);
-                if (ce) ce.classList.add('copied');
-                if (ct) ct.classList.add('copied');
-            }
-            
-            // Highlight current
-            if (currentIndex < translationsPlain.length) {
-                var ae = document.getElementById('eng-' + currentIndex);
-                var at = document.getElementById('trans-' + currentIndex);
-                if (ae) ae.classList.add('active');
-                if (at) {
-                    at.classList.add('active');
-                    at.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                }
-            }
-        }
-        
-        function updateUI() {
-            totalNum.textContent = translationsPlain.length;
-            
-            if (currentIndex >= translationsPlain.length) {
-                currentNum.textContent = translationsPlain.length;
-                copyNextBtn.innerHTML = '✔ All Done!';
-                copyNextBtn.disabled = true;
-                copyNextBtn.style.background = '#95a5a6';
-                previewText.textContent = '';
-                previewText.className = 'preview-empty';
-                previewText.textContent = 'All paragraphs copied!';
-                nextNum.textContent = '—';
-                doneMessage.className = 'show';
+        const structure = { title: paragraphs[0], sections: [] };
+        let currentSection = { type: 'message', title: null, paragraphs: [] };
+        let testimonyCount = 0, confirmationCount = 0;
+        for (let i = 1; i < paragraphs.length; i++) {
+            const para = paragraphs[i];
+            const plainPara = getPlainText(para);
+            if (isSectionTitle(plainPara)) {
+                if (currentSection.paragraphs.length > 0) structure.sections.push(currentSection);
+                const lowerPara = plainPara.toLowerCase();
+                let sectionType = 'testimony';
+                if (lowerPara.includes('confirm') || lowerPara.includes('prophetic') ||
+                    lowerPara.includes('prophecy') || lowerPara.includes('deliverance')) {
+                    sectionType = 'confirmation'; confirmationCount++;
+                } else { testimonyCount++; }
+                currentSection = {
+                    type: sectionType, title: para, plainTitle: plainPara,
+                    anchor: sectionType === 'testimony' ? `testimony-${testimonyCount}` : `confirmation-${confirmationCount}`,
+                    paragraphs: []
+                };
             } else {
-                currentNum.textContent = currentIndex + 1;
-                copyNextBtn.innerHTML = '📋 Copy & Next (¶' + (currentIndex + 1) + ' of ' + translationsPlain.length + ')';
-                copyNextBtn.disabled = false;
-                copyNextBtn.style.background = '#27ae60';
-                previewText.innerHTML = translationsHtml[currentIndex];
-                previewText.className = '';
-                nextNum.textContent = currentIndex + 1;
-                doneMessage.className = '';
-            }
-            
-            // Update "just copied" area
-            if (currentIndex > 0) {
-                copiedText.innerHTML = translationsHtml[currentIndex - 1];
-                copiedText.className = '';
-                copiedNum.textContent = currentIndex;
-            } else {
-                copiedText.className = 'preview-empty';
-                copiedText.textContent = 'Nothing copied yet';
-                copiedNum.textContent = '—';
-            }
-            
-            highlightCurrentRow();
-        }
-        
-        function copyNext() {
-            if (currentIndex >= translationsPlain.length) return;
-            
-            var plainText = translationsPlain[currentIndex];
-            var htmlText = translationsHtml[currentIndex];
-            
-            // Copy with formatting using Clipboard API
-            copyRichText(plainText, htmlText);
-            
-            // Show feedback
-            feedback.className = 'show';
-            setTimeout(function() { feedback.className = ''; }, 1000);
-            
-            // Move to next
-            currentIndex++;
-            updateUI();
-        }
-        
-        function copyRichText(plain, html) {
-            // Wrap HTML in a paragraph for proper pasting
-            var wrappedHtml = '<p>' + html + '</p>';
-            
-            // Try modern Clipboard API with HTML support
-            if (navigator.clipboard && typeof ClipboardItem !== 'undefined') {
-                try {
-                    var htmlBlob = new Blob([wrappedHtml], { type: 'text/html' });
-                    var textBlob = new Blob([plain], { type: 'text/plain' });
-                    var item = new ClipboardItem({
-                        'text/html': htmlBlob,
-                        'text/plain': textBlob
-                    });
-                    navigator.clipboard.write([item]).catch(function() {
-                        fallbackCopyRich(plain, wrappedHtml);
-                    });
-                    return;
-                } catch (e) {
-                    // Fall through to fallback
-                }
-            }
-            fallbackCopyRich(plain, wrappedHtml);
-        }
-        
-        function fallbackCopyRich(plain, html) {
-            // Fallback: use execCommand with a hidden richtext div
-            var container = document.createElement('div');
-            container.innerHTML = html;
-            container.style.position = 'fixed';
-            container.style.left = '-9999px';
-            container.style.top = '0';
-            container.style.opacity = '0';
-            document.body.appendChild(container);
-            
-            var range = document.createRange();
-            range.selectNodeContents(container);
-            var sel = window.getSelection();
-            sel.removeAllRanges();
-            sel.addRange(range);
-            
-            try {
-                document.execCommand('copy');
-            } catch (e) {
-                // Last resort: plain text
-                copyPlainText(plain);
-            }
-            
-            sel.removeAllRanges();
-            document.body.removeChild(container);
-        }
-        
-        function copyPlainText(text) {
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(text).catch(function() {
-                    var ta = document.createElement('textarea');
-                    ta.value = text;
-                    ta.style.position = 'fixed';
-                    ta.style.left = '-9999px';
-                    document.body.appendChild(ta);
-                    ta.select();
-                    try { document.execCommand('copy'); } catch (e) {}
-                    document.body.removeChild(ta);
-                });
+                currentSection.paragraphs.push(para);
             }
         }
-        
-        function skipNext() {
-            if (currentIndex >= translationsPlain.length) return;
-            currentIndex++;
-            updateUI();
+        if (currentSection.paragraphs.length > 0) structure.sections.push(currentSection);
+
+        const previewList = document.getElementById('previewList');
+        const titlePreview = getPlainText(structure.title);
+        previewList.innerHTML = `<li><span class="detected">Title:</span> ${titlePreview.substring(0,50)}${titlePreview.length>50?'...':''}</li>`;
+        structure.sections.forEach(section => {
+            const typeLabel = section.type.charAt(0).toUpperCase() + section.type.slice(1);
+            const titleText = section.plainTitle ? section.plainTitle.substring(0,40)+(section.plainTitle.length>40?'...':'') : '(Message content)';
+            previewList.innerHTML += `<li><span class="detected">${typeLabel}:</span> ${titleText} (${section.paragraphs.length} paragraphs)</li>`;
+        });
+        document.getElementById('preview').classList.add('show');
+
+        let blocks = '';
+        const titlePlain = getPlainText(structure.title);
+        blocks += `<!-- wp:heading {"textAlign":"center","level":1} -->\n<h1 class="wp-block-heading has-text-align-center"><strong>${titlePlain}</strong></h1>\n<!-- /wp:heading -->\n\n`;
+        const messageSection = structure.sections.find(s => s.type === 'message') || structure.sections[0];
+        const messageParagraphs = messageSection ? messageSection.paragraphs : [];
+        if (messageParagraphs.length > 0) {
+            blocks += `<!-- wp:paragraph -->\n<p>${messageParagraphs[0]}</p>\n<!-- /wp:paragraph -->\n\n`;
         }
-        
-        function resetSequence() {
-            currentIndex = 0;
-            copiedText.className = 'preview-empty';
-            copiedText.textContent = 'Nothing copied yet';
-            copiedNum.textContent = '—';
-            updateUI();
+        blocks += `<!-- wp:jetpack/tiled-gallery {"columnWidths":[["50.00000","50.00000"]],"ids":[]} -->\n<!-- /wp:jetpack/tiled-gallery -->\n\n`;
+        blocks += `<!-- wp:spacer {"height":"50px"} -->\n<div style="height:50px" aria-hidden="true" class="wp-block-spacer"></div>\n<!-- /wp:spacer -->\n\n`;
+        if (messageParagraphs.length > 1) {
+            blocks += `<!-- wp:paragraph {"anchor":"message"} -->\n<p id="message">${messageParagraphs[1]}</p>\n<!-- /wp:paragraph -->\n\n`;
         }
-        
-        function generateExcerpt(paras) {
-            if (paras.length < 2) return;
-            
-            var text = paras[1]; // First content paragraph (skip title)
-            if (paras.length > 2) {
-                text += ' ' + paras[2];
-            }
-            
-            // Trim to ~345 chars
-            if (text.length > 347) {
-                text = text.substring(0, 347);
-                var lastSpace = text.lastIndexOf(' ');
-                if (lastSpace > 300) {
-                    text = text.substring(0, lastSpace);
-                }
-            }
-            
-            // Remove trailing punctuation and add ellipsis
-            text = text.replace(/[.,;:!?]+$/, '') + '...';
-            
-            excerptText.value = text;
-            charCount.textContent = text.length + ' characters';
+        blocks += `<!-- wp:image {"align":"left","sizeSlug":"large"} -->\n<figure class="wp-block-image alignleft size-large"><img src="" alt="Sermon image"/></figure>\n<!-- /wp:image -->\n\n`;
+        for (let i = 2; i < messageParagraphs.length; i++) {
+            blocks += `<!-- wp:paragraph -->\n<p>${messageParagraphs[i]}</p>\n<!-- /wp:paragraph -->\n\n`;
         }
-        
-        function copyExcerpt() {
-            copyPlainText(excerptText.value);
-            alert('Excerpt copied!');
-        }
-        
-        function clearAll() {
-            englishInput.innerHTML = '';
-            translationInput.innerHTML = '';
-            resultsSection.className = 'section';
-            translationsPlain = [];
-            translationsHtml = [];
-            englishPlain = [];
-            currentIndex = 0;
-            paraGrid.innerHTML = '';
-        }
-    </script>
+        blocks += `<!-- wp:spacer {"height":"30px"} -->\n<div style="height:30px" aria-hidden="true" class="wp-block-spacer"></div>\n<!-- /wp:spacer -->\n\n`;
+        structure.sections.forEach(section => {
+            if (section.type === 'message') return;
+            blocks += `<!-- wp:heading {"anchor":"${section.anchor}"} -->\n<h2 class="wp-block-heading" id="${section.anchor}"><strong>${section.plainTitle}</strong></h2>\n<!-- /wp:heading -->\n\n`;
+            blocks += `<!-- wp:image {"sizeSlug":"large"} -->\n<figure class="wp-block-image size-large"><img src="" alt="${section.type} image"/></figure>\n<!-- /wp:image -->\n\n`;
+            section.paragraphs.forEach(para => {
+                blocks += `<!-- wp:paragraph -->\n<p>${para}</p>\n<!-- /wp:paragraph -->\n\n`;
+            });
+            blocks += `<!-- wp:spacer {"height":"30px"} -->\n<div style="height:30px" aria-hidden="true" class="wp-block-spacer"></div>\n<!-- /wp:spacer -->\n\n`;
+        });
+        blocks += `<!-- wp:spacer {"height":"20px"} -->\n<div style="height:20px" aria-hidden="true" class="wp-block-spacer"></div>\n<!-- /wp:spacer -->\n\n`;
+        blocks += `<!-- wp:jetpack/tiled-gallery {"columnWidths":[["33.33333","33.33333","33.33333"]],"ids":[]} -->\n<!-- /wp:jetpack/tiled-gallery -->\n`;
+
+        document.getElementById('outputCode').value = blocks;
+
+        const excerpt = generateExcerpt(messageParagraphs);
+        document.getElementById('excerptOutput').value = excerpt;
+        const charCount = excerpt.length;
+        const charCountEl = document.getElementById('excerptCharCount');
+        charCountEl.textContent = `${charCount} / 350 characters`;
+        charCountEl.className = (charCount >= 340 && charCount <= 355) ? 'char-count good' : 'char-count warning';
+    }
+
+    function copyCode() {
+        const output = document.getElementById('outputCode');
+        output.select();
+        navigator.clipboard.writeText(output.value).then(() => {
+            const fb = document.getElementById('copyFeedback');
+            fb.classList.add('show');
+            setTimeout(() => fb.classList.remove('show'), 2000);
+        });
+    }
+
+    function copyExcerpt() {
+        const output = document.getElementById('excerptOutput');
+        output.select();
+        navigator.clipboard.writeText(output.value).then(() => {
+            const fb = document.getElementById('excerptCopyFeedback');
+            fb.classList.add('show');
+            setTimeout(() => fb.classList.remove('show'), 2000);
+        });
+    }
+
+    function clearAll() {
+        document.getElementById('inputArea').innerHTML = '';
+        document.getElementById('outputCode').value = '';
+        document.getElementById('excerptOutput').value = '';
+        document.getElementById('excerptCharCount').textContent = '0 / 350 characters';
+        document.getElementById('excerptCharCount').className = 'char-count';
+        document.getElementById('preview').classList.remove('show');
+    }
+</script>
 </body>
 </html>
